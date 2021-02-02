@@ -47,4 +47,4 @@ resource "aws_s3_bucket" "upload" {
 }
 ```
 ## SNS Topic
-
+* Next, let's create the SNS topic
