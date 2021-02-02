@@ -25,3 +25,26 @@ To design a data processing pipeline taking input in CSV format from a user and 
 * Since the goal is to send the JSON message to the message queue. We can achieve that by subscribing a Lambda function to the SNS topic
 * On invocation, the Lambda function will parse and inspect the event notification, process the CSV file which is uploaded into S3, and forward the output to a message queue, which is SQS
 * SQS can be used to store the output (the generated JSON) from the Lambda function and this further can be processed asynchronously using another Lambda function or a long running polling service
+# Implementation
+* To develop the solution, I'd be using the following tools and language:
+    * Terraform
+    * Python 3.7
+    * VS Code + Terraform Plugin
+## S3 Bucket
+* Firstly, let's create the S3 bucket which can be utilized by the partner to upload the CSV files
+* We need to provide a bucket name and an ACL
+* The ACL will be ``public-read`` as we want to enable people to make their CSV's publicy readable but require authentication for uploads
+* The ``force-destroy`` option allows Terraform to destroy the bucket even if it is not empty
+```
+variable "aws_s3_bucket_upload_name" {
+  default = "sns-sqs-upload-bucket"
+}
+
+resource "aws_s3_bucket" "upload" {
+  bucket = "${var.aws_s3_bucket_upload_name}"
+  acl    = "public-read"
+  force_destroy = true
+}
+```
+## SNS Topic
+
