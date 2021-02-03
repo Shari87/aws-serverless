@@ -39,4 +39,4 @@ def lambda_handler(event, context):
 
     
     with open(filename_json, 'r') as json_file_contents:
-        response = sqs.send_message(QueueUrl=queue_url,MessageBody=json_file_contents.read())
+        response = sqs.send_message(QueueUrl=queue_url,MessageBody=json_file_contents.write())
