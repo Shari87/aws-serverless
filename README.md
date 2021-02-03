@@ -47,4 +47,60 @@ resource "aws_s3_bucket" "upload" {
 }
 ```
 ## SNS Topic
-* Next, let's create the SNS topic
+* Next, let's create the SNS topic. To create an SNS topic we only need to provide a name
+```
+resource "aws_sns_topic" "upload" {
+  name = "sns-sqs-upload-topic"
+}
+```
+* The topic alone is not going to be useful if we do not allow anyone to publish messages
+* In order to do that we attach a policy to the topic which allows our bucket resource to perform the ```SNS-Publish``` action on the topic
+```
+resource "aws_sns_topic_policy" "upload" {
+  arn = "${aws_sns_topic.upload.arn}"
+
+  policy = "${data.aws_iam_policy_document.sns_upload.json}"
+}
+
+data "aws_iam_policy_document" "sns_upload" {
+  policy_id = "snssqssns"
+  statement {
+    actions = [
+      "SNS:Publish",
+    ]
+    condition {
+      test = "ArnLike"
+      variable = "aws:SourceArn"
+
+      values = [
+        "arn:aws:s3:::${var.aws_s3_bucket_upload_name}",
+      ]
+    }
+    effect = "Allow"
+    principals {
+      type = "AWS"
+      identifiers = [
+        "*"]
+    }
+    resources = [
+      "${aws_sns_topic.upload.arn}",
+    ]
+    sid = "snssqssnss3upload"
+  }
+}
+```
+## S3 Event Notification
+* With our SNS topic and S3 bucket resource defined we can combine them by creating an S3 bucket notification which will publish to the topic
+* We can control the **events** we want to be notified about
+* In this context, we are interested in all object creation events. An optional filter can be provided, for e.g., only notifications for ```*.csv``` in this case
+```
+resource "aws_s3_bucket_notification" "upload" {
+  bucket = "${aws_s3_bucket.upload.id}"
+
+  topic {
+    topic_arn     = "${aws_sns_topic.upload.arn}"
+    events        = ["s3:ObjectCreated:*"]
+    filter_suffix = ".csv"
+  }
+}
+```
