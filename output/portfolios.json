@@ -1,0 +1,16 @@
+{
+    "1": {
+        "record_id": "1", 
+        "client_reference": "9e40659b-8b9f4fc4-814b-5a7b5a23b64d", 
+        "account_number": "12345678", 
+        "agent_code": "EREZBT", 
+        "portfolio_reference": "90755e32-7438-4354-ad37-ad900e297844"
+    }, 
+    "2": {
+        "record_id": "2", 
+        "client_reference": "f4a0cc2c-d0b4-4f14-b202-c8a5e45e90e7", 
+        "account_number": "12345679", 
+        "agent_code": "SFOJFK", 
+        "portfolio_reference": "439695b4-508d-4562-8576-670e70024627"
+    }
+}

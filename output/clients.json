@@ -1,0 +1,16 @@
+{
+    "1": {
+        "record_id": "1",
+        "type": "client_message",
+        "client_reference": "9e40659b-8b9f-4fc4-814b-5a7b5a23b64d",
+        "tax_free_allowance": "801",
+        "taxes_paid": "0.00"
+    },
+    "2": {
+        "record_id": "2",
+        "type": "client_message",
+        "client_reference": "f4a0cc2c-d0b4-4f14-b202-c8a5e45e90e7",
+        "tax_free_allowance": "0",
+        "taxes_paid": "789.56"
+    }
+}
