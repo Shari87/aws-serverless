@@ -208,7 +208,7 @@ resource "aws_iam_role" "lambda_exec_role" {
 EOF
 }
 ```
-* Now we can define the Lambda function resource. It is useful also specify the ```source_code_hash``` in order to trigger updates if the file has changed although the name did not
+* Now we can define the Lambda function resource. It is useful also to specify the ```source_code_hash``` in order to trigger updates if the file has changed although the name did not
 ```
 resource "aws_lambda_function" "lambda_function" {
   role             = "${aws_iam_role.lambda_exec_role.arn}"
@@ -238,3 +238,47 @@ resource "aws_sns_topic_subscription" "lambda" {
   endpoint  = "${aws_lambda_function.lambda_function.arn}"
 }
 ```
+## SQS Queue
+* The creation of the SQS queue works in a similar fashion
+* We have to provide a name for the queue and a policy which allows SNS to send messages to the queue
+```
+resource "aws_sqs_queue" "upload" {
+  name = "sns-sqs-upload"
+}
+```
+```
+resource "aws_sqs_queue_policy" "test" {
+  queue_url = "${aws_sqs_queue.upload.id}"
+  policy = "${data.aws_iam_policy_document.sqs_upload.json}"
+}
+
+data "aws_iam_policy_document" "sqs_upload" {
+  policy_id = "__default_policy_ID"
+  statement {
+    actions = [
+      "sqs:ReceiveMessage",
+    ]
+    condition {
+      test = "ArnEquals"
+      variable = "aws:SourceArn"
+
+      values = [
+        "${aws_lambda_function.lambda_function.arn}",
+      ]
+    }
+    effect = "Allow"
+    principals {
+      type = "AWS"
+      identifiers = [
+        "*"]
+    }
+    resources = [
+      "${aws_sqs_queue.upload.arn}",
+    ]
+    sid = "__default_statement_ID"
+  }
+}
+```
+## SQS Subscription
+* Next we need to susbcribe the queue to the topic. SNS topic subscriptions
+* SNS topic subscriptions support [multiple protocols](https://docs.aws.amazon.com/sns/latest/api/API_Subscribe.html):```http```,```https```,```email```
