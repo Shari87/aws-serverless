@@ -165,7 +165,7 @@ resource "aws_s3_bucket_notification" "upload" {
                     "arn": "arn:aws:s3:::sns-sqs-upload-bucket"
                 },
                 "object": {
-                    "key": "3427394.jpeg",
+                    "key": "clients.csv",
                     "size": 25044,
                     "eTag": "a3cf1dabef657a65a63a270e27312ddc",
                     "sequencer": "005B34CCC64D9E046E"
