@@ -104,3 +104,74 @@ resource "aws_s3_bucket_notification" "upload" {
   }
 }
 ```
+## Lambda Function
+### Message Format
+* We can use the webhook URL to create our Lambda function
+* The function will receive S3 notifications wrapped inside SNS notifications
+* Both are sent in JSON format, but the S3 notification is stored in the ```.Records.SNS.Message```field as a JSON string and has to be parsed as well
+* This is an example of an SNS notification wrapper message
+```
+{
+    "Records": [
+        {
+            "EventSource": "aws:sns",
+            "EventVersion": "1.0",
+            "EventSubscriptionArn": "arn:aws:sns:eu-central-1:195499643157:sns-sqs-upload-topic:c7173bbb-8dda-47f6-9f54-a6aa81f65aac",
+            "Sns": {
+                "Type": "Notification",
+                "MessageId": "10a7c00e-af4b-5d93-9459-93a0604d93f5",
+                "TopicArn": "arn:aws:sns:eu-central-1:195499643157:sns-sqs-upload-topic",
+                "Subject": "Amazon S3 Notification",
+                "Message": "<inner_message>",
+                "Timestamp": "2018-06-28T11:55:50.578Z",
+                "SignatureVersion": "1",
+                "Signature": "sTuBzzioojbez0zGFzdk1DLiCmeby0VuSdBvg0yS6xU+dKOk3U8iFUzbS1ZaNI6oZp+LHhehDziaMkTHQ7qcLBebu9uTI++mGcEhlgz+Ns0Dx3mKXyMTZwEcNtwfHEblJPjHXRsuCQ36RuZjByfI0pc0rsISxdJDr9WElen4U0ltmbzUJVpB22x3ELqciEDRipcpVjZo+V2J8GjdCvKu4uFV6RW3cKDOb91jcPc1vUnv/L6Q1gARIUFTbeUYvLbbIAmOe5PiAT2ZYaAmzHKvGOep/RT+OZOA4F6Ro7pjY0ysFpvvaAp8QKp4Ikj40N9lVKtk24pW+/7OsQMUBGOGoQ==",
+                "SigningCertUrl": "https://sns.eu-central-1.amazonaws.com/SimpleNotificationService-ac565b8b1a6c5d002d285f9598aa1d9b.pem",
+                "UnsubscribeUrl": "https://sns.eu-central-1.amazonaws.com/?Action=Unsubscribe&SubscriptionArn=arn:aws:sns:eu-central-1:195499643157:sns-sqs-upload-topic:c7173bbb-8dda-47f6-9f54-a6aa81f65aac",
+                "MessageAttributes": {}
+            }
+        }
+    ]
+}
+```
+* Inside the ```<inner_message>``` part you will find the actual S3 notification, which might look like this
+```
+{
+    "Records": [
+        {
+            "eventVersion": "2.0",
+            "eventSource": "aws:s3",
+            "awsRegion": "eu-central-1",
+            "eventTime": "2018-06-28T11:55:50.528Z",
+            "eventName": "ObjectCreated:Put",
+            "userIdentity": {
+                "principalId": "AWS:AIDAI3EXAMPLEEXAMP"
+            },
+            "requestParameters": {
+                "sourceIPAddress": "xxx.yyy.zzz.qqq"
+            },
+            "responseElements": {
+                "x-amz-request-id": "0A8A0DA78EF73966",
+                "x-amz-id-2": "/SD3sDpP1mcDc6pC61573e4DAFSCnYoesZxeETb4MV3PpVgT4ud8sw0dMrnWI9whB3RYhwGo+8A="
+            },
+            "s3": {
+                "s3SchemaVersion": "1.0",
+                "configurationId": "tf-s3-topic-20180628113348955100000002",
+                "bucket": {
+                    "name": "sns-sqs-upload-bucket",
+                    "ownerIdentity": {
+                        "principalId": "A2OMJ1OL5PYOLU"
+                    },
+                    "arn": "arn:aws:s3:::sns-sqs-upload-bucket"
+                },
+                "object": {
+                    "key": "3427394.jpeg",
+                    "size": 25044,
+                    "eTag": "a3cf1dabef657a65a63a270e27312ddc",
+                    "sequencer": "005B34CCC64D9E046E"
+                }
+            }
+        }
+    ]
+}
+```
