@@ -30,6 +30,7 @@ To design a data processing pipeline taking input in CSV format from a user and 
     * Terraform
     * Python 3.7
     * VS Code + Terraform Plugin
+    * AWS CLI and AWS account 
 ## S3 Bucket
 * Firstly, let's create the S3 bucket which can be utilized by the partner to upload the CSV files
 * We need to provide a bucket name and an ACL
@@ -156,22 +157,84 @@ resource "aws_s3_bucket_notification" "upload" {
             },
             "s3": {
                 "s3SchemaVersion": "1.0",
-                "configurationId": "tf-s3-topic-20180628113348955100000002",
+                "configurationId": "TriggerLambdaToConvertCsvToJson",
                 "bucket": {
-                    "name": "sns-sqs-upload-bucket",
+                    "name": "sns-lambda-upload-bucket",
                     "ownerIdentity": {
                         "principalId": "A2OMJ1OL5PYOLU"
                     },
                     "arn": "arn:aws:s3:::sns-sqs-upload-bucket"
                 },
                 "object": {
-                    "key": "clients.csv",
-                    "size": 25044,
-                    "eTag": "a3cf1dabef657a65a63a270e27312ddc",
-                    "sequencer": "005B34CCC64D9E046E"
+                    "key": "upload/input/clients.csv",
+                    "size": 0,
+                    "eTag": "x",
+                    "sequencer": "x"
                 }
             }
         }
     ]
+}
+```
+## Source Code
+* Let's head back to Lambda and write some code that will read the CSV when it arrives onto S3, process the file, convert to JSON, and then write as a json file to SQS
+* [Lambda.py](https://github.com/Shari87/aws-serverless/raw/main/lambda.py) is a simple Python file which basically describes the process mentioned in the above point
+* Once this python file is created, zip the file up using the command
+```bash
+zip lambda lambda.py
+```
+* Before we can create the Lambda function we have to create an IAM role for the execution.
+* Then we can create the Lambda function itself and also setup the permissions for the SNS notification to be able to invoke our Lambda function
+* First the IAM role:
+```
+resource "aws_iam_role" "lambda_exec_role" {
+  name        = "lambda_exec"
+  path        = "/"
+  description = "Allows Lambda Function to call AWS services on your behalf."
+
+  assume_role_policy = <<EOF
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Principal": {
+        "Service": "lambda.amazonaws.com"
+      },
+      "Action": "sts:AssumeRole"
+    }
+  ]
+}
+EOF
+}
+```
+* Now we can define the Lambda function resource. It is useful also specify the ```source_code_hash``` in order to trigger updates if the file has changed although the name did not
+```
+resource "aws_lambda_function" "lambda_function" {
+  role             = "${aws_iam_role.lambda_exec_role.arn}"
+  handler          = "${var.handler}"
+  runtime          = "${var.runtime}"
+  filename         = "lambda.zip"
+  function_name    = "${var.function_name}"
+  source_code_hash = "${base64sha256(file("lambda.zip"))}"
+}
+```
+* Finally we have to create a permission which allows SNS messages to trigger the Lambda function
+```
+resource "aws_lambda_permission" "sns" {
+  statement_id  = "AllowExecutionFromSNS"
+  action        = "lambda:InvokeFunction"
+  function_name = "${aws_lambda_function.lambda_function.function_name}"
+  principal     = "sns.amazonaws.com"
+  source_arn = "${aws_sns_topic.upload.arn}"
+}
+```
+## Lambda Subscription
+* The only link that is missing to complete our pipeline is the subscription of the Lambda function to the SNS topic
+```
+resource "aws_sns_topic_subscription" "lambda" {
+  topic_arn = "${aws_sns_topic.upload.arn}"
+  protocol  = "lambda"
+  endpoint  = "${aws_lambda_function.lambda_function.arn}"
 }
 ```
