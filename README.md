@@ -281,4 +281,17 @@ data "aws_iam_policy_document" "sqs_upload" {
 ```
 ## SQS Subscription
 * Next we need to susbcribe the queue to the topic. SNS topic subscriptions
-* SNS topic subscriptions support [multiple protocols](https://docs.aws.amazon.com/sns/latest/api/API_Subscribe.html):```http```,```https```,```email```
+* SNS topic subscriptions support [multiple protocols](https://docs.aws.amazon.com/sns/latest/api/API_Subscribe.html): ```http```, ```https```, ```email```, ```sms```, ```sqs```, ```lambda```
+* In this case we will use the ```sqs``` protocol and provide both the topic and the endpoint
+```
+resource "aws_sns_topic_subscription" "sqs" {
+  topic_arn = "${aws_sns_topic.upload.arn}"
+  protocol  = "sqs"
+  endpoint  = "${aws_sqs_queue.upload.arn}"
+}
+```
+# Future Improvements
+* We can introduce AWS step functions as a serverless function orchestrator, that makes it easy to sequence AWS lambda functions and multiple AWS services into business-critical applications
+* With its built-in operational controls, Step Functions manages sequencing, error handling, retry logic, and state, removing a significant operational burden from your team
+* We can use Cloudwatch as event triggers when a PutObject operation takes place onto S3. Also, it can be used to monitor our Lambda execution time and the error rate and success rate % providing some useful metrics to the team
+* AWS Lambda is optimized for simple and quick functions to execute. Larger and more complex functions create execution complexity (and significant execution cost) to the user. Amazon ECS, on the other hand, can be used with any reasonable size and complexity container
