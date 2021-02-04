@@ -178,7 +178,7 @@ resource "aws_s3_bucket_notification" "upload" {
 ```
 ## Source Code
 * Let's head back to Lambda and write some code that will read the CSV when it arrives onto S3, process the file, convert to JSON, and then write as a json file to SQS
-* [Lambda.py](https://github.com/Shari87/aws-serverless/raw/main/lambda.py) is a simple Python file which basically describes the process mentioned in the above point
+* [Lambda.py](lambda.py) is a simple Python file which basically describes the process mentioned in the above point
 * Once this python file is created, zip the file up using the command
 ```bash
 zip lambda lambda.py
